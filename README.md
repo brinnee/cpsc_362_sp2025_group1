@@ -2,7 +2,7 @@
 
 ## Polyglot
 ---
-### An app where language learners can interact with native speakers to practice conversational skills, without needing to travel.
+### An app where language learners can interact with each other, and native speakers to hone their skills.
 
 #### Our mission is to help you improve your language learning through a community of fellow language learners!
 
