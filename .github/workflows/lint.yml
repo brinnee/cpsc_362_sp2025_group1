@@ -37,4 +37,4 @@ jobs:
 
       # Run linter
       - name: Lint with Next.js
-        run: cd app && npx next lint
+        run: cd polyglot-app && npx next lint
