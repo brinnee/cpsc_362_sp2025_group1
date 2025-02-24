@@ -1,29 +1,15 @@
-# Create T3 App
 
-This is a [T3 Stack](https://create.t3.gg/) project bootstrapped with `create-t3-app`.
+# Polyglot (CPSC362 Group 1 Project)
 
-## What's next? How do I make an app with this?
+An app where language learners can interact with each other, and native speakers to hone their skills. Our mission is to help you improve your language learning through a community of fellow language learners!
 
-We try to keep this project as simple as possible, so you can start with just the scaffolding we set up for you, and add additional things later when they become necessary.
+If you're learning a new language and you want to ask a quick, bite-sized question about something you're not sure of, **Polyglot** is for you.
 
-If you are not familiar with the different technologies used in this project, please refer to the respective docs. If you still are in the wind, please join our [Discord](https://t3.gg/discord) and ask for help.
+## Development Setup
+To start developing, clone this repo, and install the following dependencies on your system if you haven't already: 
+- [Node.js](https://nodejs.org/en/download)
+- [pnpm](https://pnpm.io/installation)
 
-- [Next.js](https://nextjs.org)
-- [NextAuth.js](https://next-auth.js.org)
-- [Prisma](https://prisma.io)
-- [Drizzle](https://orm.drizzle.team)
-- [Tailwind CSS](https://tailwindcss.com)
-- [tRPC](https://trpc.io)
+Once Node.js and pnpm are installed, head into the project directory and run `pnpm install`.
 
-## Learn More
-
-To learn more about the [T3 Stack](https://create.t3.gg/), take a look at the following resources:
-
-- [Documentation](https://create.t3.gg/)
-- [Learn the T3 Stack](https://create.t3.gg/en/faq#what-learning-resources-are-currently-available) — Check out these awesome tutorials
-
-You can check out the [create-t3-app GitHub repository](https://github.com/t3-oss/create-t3-app) — your feedback and contributions are welcome!
-
-## How do I deploy this?
-
-Follow our deployment guides for [Vercel](https://create.t3.gg/en/deployment/vercel), [Netlify](https://create.t3.gg/en/deployment/netlify) and [Docker](https://create.t3.gg/en/deployment/docker) for more information.
+To run a development server, type `pnpm run dev` and simply type <localhost:3000> into your browser. If you make a change and save the file, the browser will automatically reload the page.
