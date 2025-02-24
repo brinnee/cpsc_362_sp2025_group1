@@ -12,4 +12,4 @@ To start developing, clone this repo, and install the following dependencies on 
 
 Once Node.js and pnpm are installed, head into the project directory and run `pnpm install`. You can run `./start-database.sh` to start a local PostgreSQL database, but in this version it's not needed.
 
-To run a development server, type `pnpm run dev` and simply type <localhost:3000> into your browser. If you make a change and save the file, the browser will automatically reload the page.
+To run a development server, type `pnpm run dev` and simply type http://localhost:3000 into your browser. If you make a change and save the file, the browser will automatically reload the page.
