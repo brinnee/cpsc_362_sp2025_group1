@@ -4,7 +4,7 @@ export type Language = {
 }
 
 export type Post = {
-    id: string
+    id: number
     title: string
     content: string
     language: string
@@ -15,10 +15,10 @@ export type Post = {
 }
 
 export type Comment = {
-    id: string
-    postId: string
-    content: string
-    author: string
+    id: number
+    postId: number
+    content: string | null
+    author: string | null
     votes: number
-    createdAt: Date
+    createdAt: Date | null
 }

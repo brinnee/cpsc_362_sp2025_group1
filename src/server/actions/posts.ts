@@ -3,7 +3,6 @@
 import { db } from "~/server/db";
 import { desc, sql } from "drizzle-orm";
 import { languages, posts, users, likes, replies } from "~/server/db/schema";
-import { Language, Post, Comment } from "~/lib/types";
 
 export async function getLanguages() {
   return await db
@@ -75,8 +74,7 @@ export async function getPostComments(postId: string) {
     .where(sql`${replies.postId} = ${postId}`)
     .orderBy(desc(replies.createdAt));
   
-  return result as Comment[];
-
+  return result;
 }
 
 export async function getPosts(languageFilter?: string) {

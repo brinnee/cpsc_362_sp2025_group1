@@ -23,27 +23,32 @@ export default function PostPage() {
     
     // Fetch post details
     getPostById(postId)
-      .then(setPost)
+      .then((data) => {
+        if (data) setPost(data as unknown as Post)
+      })
       .catch((e) => console.error("Error fetching post:", e))
       .finally(() => setLoading(false))
     
     // Fetch post comments
-    getPostComments(postId)
-      .then(setComments)
-      .catch((e) => console.error("Error fetching comments:", e))
+    if (postId) {
+      getPostComments(postId)
+        .then((data) => setComments(data as unknown as Comment[]))
+        .catch((e) => console.error("Error fetching comments:", e))
+    }
   }, [id])
 
-//   function getTimeAgo(date: Date) {
-//     const now = new Date()
-//     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
+  function getTimeAgo(date: Date | null) {
+    if (!date) {return null};
+    const now = new Date()
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
     
-//     if (diffInHours < 1) return "just now"
-//     if (diffInHours === 1) return "1 hour ago"
-//     if (diffInHours < 24) return `${diffInHours} hours ago`
-//     const days = Math.floor(diffInHours / 24)
-//     if (days === 1) return "1 day ago"
-//     return `${days} days ago`
-//   }
+    if (diffInHours < 1) return "just now"
+    if (diffInHours === 1) return "1 hour ago"
+    if (diffInHours < 24) return `${diffInHours} hours ago`
+    const days = Math.floor(diffInHours / 24)
+    if (days === 1) return "1 day ago"
+    return `${days} days ago`
+  }
 
   if (loading) {
     return <div className="max-w-3xl mx-auto p-6">Loading...</div>
@@ -62,7 +67,7 @@ export default function PostPage() {
             <span>•</span>
             <span>Posted by {post.author}</span>
             <span>•</span>
-            {/* <span>{getTimeAgo(post.createdAt)}</span> */}
+            <span>{getTimeAgo(post.createdAt)}</span>
           </div>
           <CardTitle className="text-2xl">{post.title}</CardTitle>
         </CardHeader>
@@ -99,7 +104,7 @@ export default function PostPage() {
                 <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                   <span>{comment.author}</span>
                   <span>•</span>
-                  {/* <span>{getTimeAgo(comment.createdAt)}</span> */}
+                  <span>{getTimeAgo(comment.createdAt)}</span>
                 </div>
                 <p>{comment.content}</p>
                 <div className="flex items-center gap-3 mt-2">
