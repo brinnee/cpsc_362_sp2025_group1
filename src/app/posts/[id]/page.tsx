@@ -1,28 +1,38 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useParams } from "next/navigation"
-import { ArrowBigDown, ArrowBigUp, MessageSquare } from "lucide-react"
+import { useParams, useRouter } from "next/navigation"
+import { ArrowBigDown, ArrowBigUp, MessageSquare, Send } from "lucide-react"
 import { Button } from "~/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
-import { getPostById, getPostComments } from "~/server/actions/posts"
+import { Textarea } from "~/components/ui/textarea"
+import { getPostById, getPostComments, createReply } from "~/server/actions/posts"
 import type { Post, Comment } from "~/lib/types"
+import { useAuth } from "~/auth/AuthContext"
+import { Alert, AlertDescription } from "~/components/ui/alert"
 
 export default function PostPage() {
   const { id } = useParams()
   const [post, setPost] = useState<Post | null>(null)
   const [comments, setComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(true)
+  const [replyContent, setReplyContent] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [, setReplyingToComment] = useState<number | null>(null)
+  const { user } = useAuth()
+  const router = useRouter()
+
+  // Ensure postId is a string
+  const postId = id ? (Array.isArray(id) ? id[0] : id) : ""
 
   useEffect(() => {
-    if (!id) return
-    
-    const postId = Array.isArray(id) ? id[0] : id
+    if (!postId) return
     
     setLoading(true)
     
     // Fetch post details
-    getPostById(postId)
+    void getPostById(postId)
       .then((data) => {
         if (data) setPost(data as unknown as Post)
       })
@@ -31,11 +41,68 @@ export default function PostPage() {
     
     // Fetch post comments
     if (postId) {
-      getPostComments(postId)
-        .then((data) => setComments(data as unknown as Comment[]))
-        .catch((e) => console.error("Error fetching comments:", e))
+      void fetchComments()
     }
-  }, [id])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, postId])
+
+  const fetchComments = async () => {
+    if (!postId) return
+    
+    try {
+      const data = await getPostComments(postId)
+      setComments(data as unknown as Comment[])
+    } catch (e) {
+      console.error("Error fetching comments:", e)
+    }
+  }
+
+  const handleReplySubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    
+    if (!postId) {
+      setError("Post ID is missing")
+      return
+    }
+    
+    if (!replyContent.trim()) {
+      setError("Please enter a comment")
+      return
+    }
+    
+    if (!user) {
+      // Redirect to signin if not authenticated
+      router.push("/signin")
+      return
+    }
+    
+    try {
+      setIsSubmitting(true)
+      setError(null)
+      
+      await createReply({
+        postId,
+        content: replyContent,
+        firebaseUid: user.uid,
+      })
+      
+      // Clear the form and refresh comments
+      setReplyContent("")
+      await fetchComments()
+      
+      // Reset replying state
+      setReplyingToComment(null)
+    } catch (error) {
+      console.error("Error creating reply:", error)
+      if (error instanceof Error) {
+        setError(error.message)
+      } else {
+        setError("Failed to post comment. Please try again.")
+      }
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   function getTimeAgo(date: Date | null) {
     if (!date) {return null};
@@ -89,10 +156,38 @@ export default function PostPage() {
         </CardContent>
       </Card>
 
+      {/* Reply Form */}
+      <Card>
+        <CardContent className="p-4">
+          <form onSubmit={handleReplySubmit}>
+            <div className="space-y-4">
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+              <Textarea
+                placeholder="Write a comment..."
+                value={replyContent}
+                onChange={(e) => setReplyContent(e.target.value)}
+                className="min-h-[100px]"
+                disabled={isSubmitting}
+              />
+              <div className="flex justify-end">
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Posting..." : "Post Comment"}
+                  {!isSubmitting && <Send className="ml-2 h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <MessageSquare className="h-5 w-5" />
-          <h2 className="text-xl font-semibold">{comments.length} Comments</h2>
+          <h2 className="text-xl font-semibold">{comments.length} Comment{comments.length === 1 ? '' : 's'}</h2>
         </div>
         
         {comments.length === 0 ? (
@@ -117,7 +212,30 @@ export default function PostPage() {
                       <ArrowBigDown className="h-4 w-4" />
                     </Button>
                   </div>
-                  <Button variant="ghost" size="sm">Reply</Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => {
+                      // Scroll to reply form and focus it
+                      window.scrollTo({
+                        top: 0,
+                        behavior: 'smooth'
+                      });
+                      // Set replying state
+                      setReplyingToComment(comment.id);
+                      // Update reply content to include @username
+                      setReplyContent(`@${comment.author} `);
+                      // Focus the textarea after scrolling
+                      setTimeout(() => {
+                        const textarea = document.querySelector('textarea');
+                        if (textarea) {
+                          textarea.focus();
+                        }
+                      }, 500);
+                    }}
+                  >
+                    Reply
+                  </Button>
                 </div>
               </CardContent>
             </Card>

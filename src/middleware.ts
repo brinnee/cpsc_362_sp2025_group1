@@ -12,9 +12,11 @@ export function middleware(request: NextRequest) {
   // We're excluding /create from the protected paths for now to avoid redirect loops
   const isProtectedPath = path.startsWith("/posts/");
   
-  // Check for authentication token in cookies
-  const authCookie = request.cookies.get("next-auth.session-token");
-  const isAuthenticated = !!authCookie;
+  // Check for Firebase authentication token in cookies
+  // Firebase stores auth in localStorage which isn't accessible in middleware
+  // So we'll use a custom cookie that should be set when Firebase auth changes
+  const firebaseAuthCookie = request.cookies.get("firebase-auth-token");
+  const isAuthenticated = !!firebaseAuthCookie;
   
   // Redirect to signin if trying to access a protected route without authentication
   if (isProtectedPath && !isAuthenticated) {

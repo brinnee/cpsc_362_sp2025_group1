@@ -10,17 +10,6 @@ import { getLanguages, getPosts } from "~/server/actions/posts"
 import type { Language, Post } from "~/lib/types"
 import { useAuth } from "~/auth/AuthContext"
 
-// type Language = { value: string; label: string }
-// type Post = {
-//   id: number
-//   title: string
-//   language: string
-//   votes: number
-//   comments: number
-//   author: string
-//   createdAt: Date
-// }
-
 export default function LanguageFeed() {
   const [selectedLanguage, setSelectedLanguage] = useState("all")
   const [languages, setLanguages] = useState<Language[]>([])
@@ -108,7 +97,7 @@ export default function LanguageFeed() {
                     <span>•</span>
                     <div className="flex items-center gap-1">
                       <MessageSquare className="h-4 w-4" />
-                      <span>{post.comments} comments</span>
+                      <span>{post.comments} comment{post.comments == 1 ? '' : 's'}</span>
                     </div>
                   </div>
                 </div>

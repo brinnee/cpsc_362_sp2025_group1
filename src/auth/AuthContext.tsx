@@ -12,6 +12,10 @@ import {
 } from "firebase/auth";
 import { auth } from "~/lib/firebase";
 import { createUser } from "~/server/actions/users";
+import Cookies from 'js-cookie';
+
+// Cookie expiration in days (30 days)
+const COOKIE_EXPIRATION = 30;
 
 type AuthContextType = {
   user: User | null;
@@ -29,16 +33,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Set auth token in localStorage when user changes
+  // Set auth token in localStorage and cookies when user changes
   useEffect(() => {
     const handleUserChange = async (currentUser: User | null) => {
       if (currentUser) {
-        // User is signed in, store the token in localStorage
+        // User is signed in, store the token in localStorage and cookie
         const token = await getIdToken(currentUser);
         localStorage.setItem('firebase-auth-token', token);
+        
+        // Set the token as a cookie for middleware authentication
+        Cookies.set('firebase-auth-token', token, { 
+          expires: COOKIE_EXPIRATION,
+          path: '/',
+          sameSite: 'strict'
+        });
       } else {
-        // User is signed out, remove the token
+        // User is signed out, remove the token from localStorage and cookie
         localStorage.removeItem('firebase-auth-token');
+        Cookies.remove('firebase-auth-token', { path: '/' });
       }
     };
 
@@ -47,6 +59,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
       if (user) {
         void handleUserChange(user);
+      } else {
+        // Make sure to clear tokens when user is null
+        localStorage.removeItem('firebase-auth-token');
+        Cookies.remove('firebase-auth-token', { path: '/' });
       }
     });
 
@@ -130,6 +146,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       await firebaseSignOut(auth);
+      // Explicitly remove tokens on sign out
+      localStorage.removeItem('firebase-auth-token');
+      Cookies.remove('firebase-auth-token', { path: '/' });
     } catch (error) {
       console.error("Error signing out:", error);
       if (error instanceof Error) {

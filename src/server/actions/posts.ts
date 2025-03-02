@@ -163,3 +163,53 @@ export async function createPost(params: {
     throw error;
   }
 }
+
+export async function createReply(params: {
+  postId: string;
+  content: string;
+  firebaseUid?: string; // Optional, will be used from the client
+}) {
+  try {
+    if (!params.postId || !params.content) {
+      throw new Error("Missing required fields");
+    }
+
+    if (!params.firebaseUid) {
+      throw new Error("You must be logged in to reply to a post");
+    }
+
+    // Get the user from the database using the Firebase UID
+    const dbUser = await db
+      .select()
+      .from(users)
+      .where(eq(users.firebaseUid, params.firebaseUid))
+      .limit(1);
+
+    if (dbUser.length === 0) {
+      throw new Error("User not found");
+    }
+
+    // Check if the post exists
+    const post = await db
+      .select()
+      .from(posts)
+      .where(eq(posts.id, parseInt(params.postId)))
+      .limit(1);
+
+    if (post.length === 0) {
+      throw new Error("Post not found");
+    }
+
+    // Create the reply
+    const result = await db.insert(replies).values({
+      userId: dbUser[0]!.id,
+      postId: parseInt(params.postId),
+      content: params.content,
+    }).returning();
+
+    return result[0];
+  } catch (error) {
+    console.error("Error creating reply:", error);
+    throw error;
+  }
+}
