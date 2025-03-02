@@ -3,6 +3,7 @@ import NavBar from "~/components/ui/NavBar";
 
 import { GeistSans } from "geist/font/sans";
 import { type Metadata } from "next";
+import { AuthProvider } from "~/auth/AuthContext";
 
 export const metadata: Metadata = {
   title: "Create T3 App",
@@ -16,8 +17,10 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${GeistSans.variable}`}>
       <body>
-        <NavBar />
-        {children}
+        <AuthProvider>
+          <NavBar />
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

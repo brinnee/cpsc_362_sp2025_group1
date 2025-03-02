@@ -22,3 +22,11 @@ export type Comment = {
     votes: number
     createdAt: Date | null
 }
+
+export type UserProfile = {
+    id: number
+    username: string | null
+    postCount: number
+    followedLanguages?: Language[]
+    likedPosts?: Post[]
+}

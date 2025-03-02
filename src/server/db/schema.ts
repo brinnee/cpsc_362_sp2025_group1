@@ -5,10 +5,8 @@ export const createTable = pgTableCreator((name) => `${name}`);
 
 export const users = createTable('Users', {
     id: serial('id').primaryKey(),
+    firebaseUid: varchar('firebase_uid', { length: 255 }).unique(),
     username: varchar('username', { length: 255 }).unique(),
-    email: varchar('email', { length: 255 }).unique(),
-    password: varchar('password', { length: 255 }),
-    privateProfile: boolean('private_profile'),
 });
 
 export const languages = createTable('Languages', {

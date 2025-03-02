@@ -2,14 +2,18 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { Menu, X, SpeechIcon, Home, PersonStandingIcon, PlusCircle } from "lucide-react"
+import { usePathname, useRouter } from "next/navigation"
+import { Menu, X, SpeechIcon, Home, PersonStandingIcon, PlusCircle, MessageSquare } from "lucide-react"
 import { cn } from "~/lib/utils"
 import { Button } from "~/components/ui/button"
+import { useAuth } from "~/auth/AuthContext"
+import { UserMenu } from "~/components/UserMenu"
 
 export function NavBar() {
+  const { user, loading } = useAuth();
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
 
   const toggleMenu = () => {
     setIsOpen(!isOpen)
@@ -17,9 +21,15 @@ export function NavBar() {
 
   const navItems = [
     { href: "/", label: "Home", icon: Home },
-    { href: "/profile", label: "Profile", icon: PersonStandingIcon },
-    { href: "/create", label: "Create Post", icon: PlusCircle },
+    { href: "/languages", label: "Languages", icon: MessageSquare},
+    ...(user ? [
+      { href: "/profile", label: "Profile", icon: PersonStandingIcon },
+    ] : [])
   ]
+
+  const handleSignIn = () => {
+    router.push("/signin")
+  }
 
   return (
     <nav className="bg-background border-b">
@@ -54,10 +64,40 @@ export function NavBar() {
                 </Link>
               )
             })}
+
+            {!loading && (
+              user ? (
+                <>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex items-center gap-2"
+                    onClick={() => {
+                      // Set auth state before navigating
+                      localStorage.setItem('authState', 'authenticated');
+                      router.push("/create");
+                    }}
+                  >
+                    <PlusCircle className="h-4 w-4" />
+                    Create Post
+                  </Button>
+                  <UserMenu />
+                </>
+              ) : (
+                <Button onClick={handleSignIn} className="ml-4">
+                  Sign In
+                </Button>
+              )
+            )}
           </div>
 
           {/* Mobile menu button */}
           <div className="flex items-center md:hidden">
+            {!loading && !user && (
+              <Button onClick={handleSignIn} variant="outline" size="sm" className="mr-2">
+                Sign In
+              </Button>
+            )}
             <Button 
               variant="ghost" 
               size="icon" 
@@ -95,6 +135,26 @@ export function NavBar() {
                 </Link>
               )
             })}
+            {!loading && user && (
+              <>
+                <Button 
+                  variant="ghost" 
+                  className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors text-muted-foreground hover:bg-accent hover:text-accent-foreground w-full justify-start"
+                  onClick={() => {
+                    // Set auth state before navigating
+                    localStorage.setItem('authState', 'authenticated');
+                    router.push("/create");
+                    setIsOpen(false);
+                  }}
+                >
+                  <PlusCircle className="h-4 w-4" />
+                  Create Post
+                </Button>
+                <div className="px-3 py-2">
+                  <UserMenu />
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

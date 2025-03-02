@@ -8,6 +8,7 @@ import { ArrowBigDown, ArrowBigUp, MessageSquare } from "lucide-react"
 import Link from "next/link"
 import { getLanguages, getPosts } from "~/server/actions/posts"
 import type { Language, Post } from "~/lib/types"
+import { useAuth } from "~/auth/AuthContext"
 
 // type Language = { value: string; label: string }
 // type Post = {
@@ -24,6 +25,7 @@ export default function LanguageFeed() {
   const [selectedLanguage, setSelectedLanguage] = useState("all")
   const [languages, setLanguages] = useState<Language[]>([])
   const [posts, setPosts] = useState<Post[]>([])
+  const { user } = useAuth()
 
   useEffect(() => {
     // Fetch languages on mount
@@ -55,18 +57,27 @@ export default function LanguageFeed() {
     <div className="max-w-2xl mx-auto p-4 space-y-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Polyglot</h1>
-        <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Select language" />
-          </SelectTrigger>
-          <SelectContent>
-            {languages.map((language) => (
-              <SelectItem key={language.value} value={language.value}>
-                {language.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-4">
+          <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Select language" />
+            </SelectTrigger>
+            <SelectContent>
+              {languages.map((language) => (
+                <SelectItem key={language.value} value={language.value}>
+                  {language.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {user && (
+            <Link href="/create">
+              <Button variant="outline" size="sm">
+                Create Post
+              </Button>
+            </Link>
+          )}
+        </div>
       </div>
 
       <div className="space-y-4">

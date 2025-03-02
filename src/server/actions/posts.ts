@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "~/server/db";
-import { desc, sql } from "drizzle-orm";
+import { desc, sql, eq } from "drizzle-orm";
 import { languages, posts, users, likes, replies } from "~/server/db/schema";
 
 export async function getLanguages() {
@@ -110,4 +110,56 @@ export async function getPosts(languageFilter?: string) {
   }
 
   return await query;
+}
+
+export async function createPost(params: {
+  title: string;
+  content: string;
+  languageName: string;
+  firebaseUid?: string; // Optional, will be used from the client
+}) {
+  try {
+    if (!params.title || !params.content || !params.languageName) {
+      throw new Error("Missing required fields");
+    }
+
+    if (!params.firebaseUid) {
+      throw new Error("You must be logged in to create a post");
+    }
+
+    // Get the user from the database using the Firebase UID
+    const dbUser = await db
+      .select()
+      .from(users)
+      .where(eq(users.firebaseUid, params.firebaseUid))
+      .limit(1);
+
+    if (dbUser.length === 0) {
+      throw new Error("User not found");
+    }
+
+    // Get the language ID
+    const language = await db
+      .select()
+      .from(languages)
+      .where(eq(languages.name, params.languageName))
+      .limit(1);
+
+    if (language.length === 0) {
+      throw new Error("Invalid language");
+    }
+
+    // Create the post
+    const result = await db.insert(posts).values({
+      userId: dbUser[0]!.id,
+      languageId: language[0]!.id,
+      title: params.title,
+      content: params.content,
+    }).returning();
+
+    return result[0];
+  } catch (error) {
+    console.error("Error creating post:", error);
+    throw error;
+  }
 }
