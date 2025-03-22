@@ -6,7 +6,7 @@ import { ArrowBigDown, ArrowBigUp, MessageSquare, Send } from "lucide-react"
 import { Button } from "~/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
 import { Textarea } from "~/components/ui/textarea"
-import { getPostById, getPostComments, createReply } from "~/server/actions/posts"
+import { getPostById, getPostComments, createReply, likePost, getUserPostLikeStatus } from "~/server/actions/posts"
 import type { Post, Comment } from "~/lib/types"
 import { useAuth } from "~/auth/AuthContext"
 import { Alert, AlertDescription } from "~/components/ui/alert"
@@ -20,6 +20,8 @@ export default function PostPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [, setReplyingToComment] = useState<number | null>(null)
+  const [likeStatus, setLikeStatus] = useState<boolean | null>(null)
+  const [isLikeLoading, setIsLikeLoading] = useState(false)
   const { user } = useAuth()
   const router = useRouter()
 
@@ -43,8 +45,18 @@ export default function PostPage() {
     if (postId) {
       void fetchComments()
     }
+
+    // Fetch user's like status for the post
+    if (user && postId) {
+      void getUserPostLikeStatus({
+        postId,
+        firebaseUid: user.uid
+      }).then(status => {
+        setLikeStatus(status)
+      }).catch(e => console.error("Error fetching like status:", e))
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, postId])
+  }, [id, postId, user])
 
   const fetchComments = async () => {
     if (!postId) return
@@ -104,6 +116,52 @@ export default function PostPage() {
     }
   }
 
+  const handleLike = async (likeType: boolean) => {
+    if (!user) {
+      // Redirect to signin if not authenticated
+      router.push("/signin")
+      return
+    }
+
+    if (!postId || isLikeLoading) return
+
+    try {
+      setIsLikeLoading(true)
+      
+      const newVotes = await likePost({
+        postId,
+        likeType,
+        firebaseUid: user.uid
+      })
+
+      // Update the post with the new vote count
+      if (post) {
+        setPost({
+          ...post,
+          votes: newVotes
+        })
+      }
+
+      // Update like status based on the action
+      if (likeStatus === likeType) {
+        // User clicked the same button again, remove the like/dislike
+        setLikeStatus(null)
+      } else {
+        // User changed from like to dislike or vice versa, or added a new like/dislike
+        setLikeStatus(likeType)
+      }
+    } catch (error) {
+      console.error("Error liking/disliking post:", error)
+      if (error instanceof Error) {
+        setError(error.message)
+      } else {
+        setError("Failed to like/dislike post. Please try again.")
+      }
+    } finally {
+      setIsLikeLoading(false)
+    }
+  }
+
   function getTimeAgo(date: Date | null) {
     if (!date) {return null};
     const now = new Date()
@@ -141,12 +199,24 @@ export default function PostPage() {
         <CardContent>
           <div className="flex gap-4">
             <div className="flex flex-col items-center gap-1">
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <ArrowBigUp className="h-6 w-6" />
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8"
+                onClick={() => handleLike(true)}
+                disabled={isLikeLoading}
+              >
+                <ArrowBigUp className="h-6 w-6" color={likeStatus === true ? "#2563EB" : "#000000"} />
               </Button>
               <span className="text-lg font-medium">{post.votes}</span>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <ArrowBigDown className="h-6 w-6" />
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8"
+                onClick={() => handleLike(false)}
+                disabled={isLikeLoading}
+              >
+                <ArrowBigDown className="h-6 w-6" color={likeStatus === false ? "#2563EB" : "#000000"} />
               </Button>
             </div>
             <div className="flex-1">
@@ -205,7 +275,7 @@ export default function PostPage() {
                 <div className="flex items-center gap-3 mt-2">
                   <div className="flex items-center gap-1">
                     <Button variant="ghost" size="icon" className="h-6 w-6">
-                      <ArrowBigUp className="h-4 w-4" />
+                      <ArrowBigUp className="h-4 w-4" color={false ? "#2563EB" : "#000000"}/>
                     </Button>
                     <span className="text-sm">{comment.votes}</span>
                     <Button variant="ghost" size="icon" className="h-6 w-6">
@@ -244,4 +314,4 @@ export default function PostPage() {
       </div>
     </div>
   )
-} 
+}

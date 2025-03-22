@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "~/server/db";
-import { desc, sql, eq } from "drizzle-orm";
+import { desc, sql, eq, and } from "drizzle-orm";
 import { languages, posts, users, likes, replies } from "~/server/db/schema";
 
 export async function getLanguages() {
@@ -211,5 +211,126 @@ export async function createReply(params: {
   } catch (error) {
     console.error("Error creating reply:", error);
     throw error;
+  }
+}
+
+export async function likePost(params: {
+  postId: string;
+  likeType: boolean; // true for like, false for dislike
+  firebaseUid?: string;
+}) {
+  try {
+    if (!params.postId) {
+      throw new Error("Missing post ID");
+    }
+
+    if (!params.firebaseUid) {
+      throw new Error("You must be logged in to like/dislike a post");
+    }
+
+    // Get the user from the database using the Firebase UID
+    const dbUser = await db
+      .select()
+      .from(users)
+      .where(eq(users.firebaseUid, params.firebaseUid))
+      .limit(1);
+
+    if (dbUser.length === 0) {
+      throw new Error("User not found");
+    }
+
+    const userId = dbUser[0]!.id;
+    const postId = parseInt(params.postId);
+
+    // Check if the user has already liked/disliked this post
+    const existingLike = await db
+      .select()
+      .from(likes)
+      .where(
+        and(
+          eq(likes.userId, userId),
+          eq(likes.postId, postId),
+          sql`${likes.replyId} IS NULL`
+        )
+      )
+      .limit(1);
+
+    if (existingLike.length > 0) {
+      // User has already liked/disliked this post
+      if (existingLike[0]!.likeType === params.likeType) {
+        // User is clicking the same button again, remove the like/dislike
+        await db
+          .delete(likes)
+          .where(eq(likes.id, existingLike[0]!.id));
+      } else {
+        // User is changing from like to dislike or vice versa
+        await db
+          .update(likes)
+          .set({ likeType: params.likeType })
+          .where(eq(likes.id, existingLike[0]!.id));
+      }
+    } else {
+      // User has not liked/disliked this post yet
+      await db.insert(likes).values({
+        userId,
+        postId,
+        replyId: null,
+        likeType: params.likeType,
+      });
+    }
+
+    // Return the updated vote count
+    const updatedPost = await getPostById(params.postId);
+    return updatedPost?.votes ?? 0;
+  } catch (error) {
+    console.error("Error liking/disliking post:", error);
+    throw error;
+  }
+}
+
+export async function getUserPostLikeStatus(params: {
+  postId: string;
+  firebaseUid?: string;
+}) {
+  try {
+    if (!params.postId || !params.firebaseUid) {
+      return null;
+    }
+
+    // Get the user from the database using the Firebase UID
+    const dbUser = await db
+      .select()
+      .from(users)
+      .where(eq(users.firebaseUid, params.firebaseUid))
+      .limit(1);
+
+    if (dbUser.length === 0) {
+      return null;
+    }
+
+    const userId = dbUser[0]!.id;
+    const postId = parseInt(params.postId);
+
+    // Check if the user has already liked/disliked this post
+    const existingLike = await db
+      .select()
+      .from(likes)
+      .where(
+        and(
+          eq(likes.userId, userId),
+          eq(likes.postId, postId),
+          sql`${likes.replyId} IS NULL`
+        )
+      )
+      .limit(1);
+
+    if (existingLike.length > 0) {
+      return existingLike[0]!.likeType;
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Error getting user post like status:", error);
+    return null;
   }
 }
