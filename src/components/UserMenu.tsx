@@ -2,6 +2,7 @@
 
 import { useAuth } from "~/auth/AuthContext";
 import { Button } from "~/components/ui/button";
+import { useRouter } from "next/navigation"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +15,7 @@ import { LogOut, User } from "lucide-react";
 
 export function UserMenu() {
   const { user, signOut } = useAuth();
+  const router = useRouter()
 
   if (!user) {
     return null;
@@ -43,7 +45,7 @@ export function UserMenu() {
           </div>
         </div>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
+        <DropdownMenuItem asChild onClick={() => {router.push("/profile")}}> 
           <Button variant="ghost" className="w-full justify-start">
             <User className="mr-2 h-4 w-4" />
             <span>Profile</span>

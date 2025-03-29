@@ -56,7 +56,7 @@ export default function SignUpPage() {
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Create an Account</CardTitle>
           <CardDescription>
-            Sign up to share and discuss code in any language
+            Sign up to share and discuss languages
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>

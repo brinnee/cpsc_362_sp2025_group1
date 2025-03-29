@@ -148,8 +148,6 @@ export async function getUserLikedPosts(firebaseUid: string): Promise<Post[]> {
     // Get the actual post data
     const likedPostIds = likedPostsQuery.map(vote => vote.postId).filter(Boolean) as number[];
     
-    // For demo purposes, we'll create some mock posts
-    // In a real app, you would fetch the actual posts from the database
     const mockPosts: Post[] = likedPostIds.map((id, index) => ({
       id,
       title: `Sample Post ${index + 1}`,

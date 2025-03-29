@@ -139,7 +139,7 @@ export default function CreatePostPage() {
         <CardHeader>
           <CardTitle className="text-2xl">Create a New Post</CardTitle>
           <CardDescription>
-            Share your code, questions, or insights with the community
+            Share your question!
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
@@ -181,7 +181,7 @@ export default function CreatePostPage() {
               <Label htmlFor="content">Content</Label>
               <Textarea
                 id="content"
-                placeholder="Describe your question or share your code..."
+                placeholder="Describe your question..."
                 value={content}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setContent(e.target.value)}
                 className="min-h-[200px]"
