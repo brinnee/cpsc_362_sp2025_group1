@@ -1,4 +1,5 @@
 "use client";
+import Chatbot from "~/components/chatbot";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -205,6 +206,8 @@ export default function CreatePostPage() {
           </CardFooter>
         </form>
       </Card>
+      {}
+      <Chatbot />
     </div>
   );
 }
