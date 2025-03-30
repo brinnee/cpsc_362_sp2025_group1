@@ -19,3 +19,4 @@ export async function POST(request: Request) {
   } catch (error) {
     return Response.json({ error: "Failed to get response" }, { status: 500 });
   }
+}
