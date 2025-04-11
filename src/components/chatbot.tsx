@@ -1,6 +1,10 @@
 "use client"; // Required for interactivity
 import { useState } from "react";
 
+interface ChatResponse {
+  reply: string;
+}
+
 export default function Chatbot() {
   const [messages, setMessages] = useState<Array<{ sender: string; text: string }>>([]);
   const [input, setInput] = useState("");
@@ -19,7 +23,7 @@ export default function Chatbot() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message: input }),
     });
-    const data = await response.json();
+    const data = await response.json() as ChatResponse;
     setMessages((msgs) => [...msgs, { sender: "Bot", text: data.reply }]);
   };
 
