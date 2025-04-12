@@ -4,16 +4,24 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+interface ChatRequest {
+  message: string;
+  history: Array<{
+    role: "user" | "assistant";
+    content: string;
+  }>;
+}
+
 export async function POST(request: Request) {
-  // @eslint-ignore 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const { message } = await request.json();
+  const { message, history } = await request.json() as ChatRequest;
 
   try {
     const completion = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      messages: [{ role: "user", content: message }],
+      messages: [
+        ...history,
+        { role: "user", content: message }
+      ],
     });
 
     return Response.json({ 
