@@ -3,18 +3,18 @@ import { sql } from 'drizzle-orm';
 
 export const createTable = pgTableCreator((name) => `${name}`);
 
-export const users = createTable('Users', {
+export const users = createTable('users', {
     id: serial('id').primaryKey(),
     firebaseUid: varchar('firebase_uid', { length: 255 }).unique(),
     username: varchar('username', { length: 255 }).unique(),
 });
 
-export const languages = createTable('Languages', {
+export const languages = createTable('languages', {
     id: serial('id').primaryKey(),
     name: varchar('name', { length: 255 }).unique(),
 });
 
-export const userLanguages = createTable('UserLanguages', {
+export const userLanguages = createTable('user_languages', {
     userId: integer('user_id').references(() => users.id),
     languageId: integer('language_id').references(() => languages.id),
 },
@@ -25,7 +25,7 @@ export const userLanguages = createTable('UserLanguages', {
 }
 );
 
-export const posts = createTable('Posts', {
+export const posts = createTable('posts', {
     id: serial('id').primaryKey(),
     userId: integer('user_id').references(() => users.id),
     languageId: integer('language_id').references(() => languages.id),
@@ -34,7 +34,7 @@ export const posts = createTable('Posts', {
     createdAt: timestamp('created_at').defaultNow(),
 });
 
-export const replies = createTable('Replies', {
+export const replies = createTable('replies', {
     id: serial('id').primaryKey(),
     userId: integer('user_id').references(() => users.id),
     postId: integer('post_id').references(() => posts.id),
@@ -42,7 +42,7 @@ export const replies = createTable('Replies', {
     createdAt: timestamp('created_at').defaultNow(),
 });
 
-export const likes = createTable('Likes', {
+export const likes = createTable('likes', {
     id: serial('id').primaryKey(),
     userId: integer('user_id').references(() => users.id),
     postId: integer('post_id').references(() => posts.id),

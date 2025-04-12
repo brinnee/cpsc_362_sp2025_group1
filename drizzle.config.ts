@@ -8,5 +8,5 @@ export default {
   dbCredentials: {
     url: env.DATABASE_URL,
   },
-  tablesFilter: ["cpsc362_group_project_*"],
+  //tablesFilter: ["cpsc362_group_project_*"],
 } satisfies Config;

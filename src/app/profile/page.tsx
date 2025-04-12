@@ -12,6 +12,7 @@ import { ArrowBigUp, MessageSquare, Settings, Languages, ThumbsUp, BookMarked } 
 import { getUserProfile, getUserLikedPosts, getUserFollowedLanguages } from "~/server/actions/users";
 import type { Post, Language, UserProfile } from "~/lib/types";
 import Link from "next/link";
+import ProfilePictureUploader from "../../components/pictureUploader";
 
 export default function ProfilePage() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -22,6 +23,7 @@ export default function ProfilePage() {
   const [initialAuthCheckDone, setInitialAuthCheckDone] = useState(false);
   const { user } = useAuth();
   const router = useRouter();
+  const [showUploader, setShowUploader] = useState(false);
 
   // Store authentication state in localStorage to prevent redirect loops
   useEffect(() => {
@@ -112,6 +114,13 @@ export default function ProfilePage() {
   return (
     <div className="max-w-4xl mx-auto p-6">
       <Card className="mb-8">
+
+      {/* Change Picture Button Below the Card */}
+      <div className="flex justify-end mb-6">
+        <Button onClick={() => setShowUploader(true)} className="bg-blue-500 text-white">
+        Change Profile Picture
+        </Button>
+      </div>
         <CardHeader className="flex flex-row items-center gap-4">
           <Avatar className="h-20 w-20">
             <AvatarImage src={user?.photoURL ?? ""} alt={user?.displayName ?? "User"} />
@@ -240,6 +249,14 @@ export default function ProfilePage() {
           </Card>
         </TabsContent>
       </Tabs>
+      {showUploader && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg shadow-lg max-w-lg w-full">
+            <ProfilePictureUploader onClose={() => setShowUploader(false)} />
+          </div>
+        </div>
+)}
+
     </div>
   );
 }
