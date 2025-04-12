@@ -334,3 +334,38 @@ export async function getUserPostLikeStatus(params: {
     return null;
   }
 }
+
+export async function searchPostsByTitle(query: string) {
+  if (!query) return [];
+  
+  const result = await db
+    .select({
+      id: posts.id,
+      title: posts.title,
+      language: languages.name,
+      votes: sql<number>`(
+        SELECT COUNT(*) 
+        FROM ${likes} 
+        WHERE post_id = ${posts.id} AND like_type = true
+      ) - (
+        SELECT COUNT(*) 
+        FROM ${likes} 
+        WHERE post_id = ${posts.id} AND like_type = false
+      )`,
+      comments: sql<number>`(
+        SELECT COUNT(*) 
+        FROM ${replies} 
+        WHERE post_id = ${posts.id}
+      )`,
+      author: users.username,
+      createdAt: posts.createdAt,
+    })
+    .from(posts)
+    .innerJoin(languages, sql`${languages.id} = ${posts.languageId}`)
+    .innerJoin(users, sql`${users.id} = ${posts.userId}`)
+    .where(sql`LOWER(${posts.title}) LIKE LOWER(${'%' + query + '%'})`)
+    .orderBy(desc(posts.createdAt))
+    .limit(5);
+  
+  return result;
+}
