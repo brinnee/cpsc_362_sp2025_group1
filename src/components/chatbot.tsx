@@ -21,7 +21,14 @@ export default function Chatbot() {
     const response = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: input }),
+      // body: JSON.stringify({ message: input }),
+      body: JSON.stringify({
+        message: input,
+        history: messages.map(msg => ({
+          role: msg.sender === "You" ? "user" : "assistant",
+          content: msg.text
+        }))
+      }),
     });
     const data = await response.json() as ChatResponse;
     setMessages((msgs) => [...msgs, { sender: "Bot", text: data.reply }]);
