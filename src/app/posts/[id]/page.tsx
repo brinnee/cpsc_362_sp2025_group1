@@ -19,20 +19,25 @@ export default function PostPage() {
   const [replyContent, setReplyContent] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showGifModal, setShowGifModal] = useState(false)
   const [, setReplyingToComment] = useState<number | null>(null)
   const [likeStatus, setLikeStatus] = useState<boolean | null>(null)
   const [isLikeLoading, setIsLikeLoading] = useState(false)
   const { user } = useAuth()
   const router = useRouter()
+  const [gifSearchTerm, setGifSearchTerm] = useState("")
+  const [gifResults, setGifResults] = useState<any[]>([])
+  const [isGifLoading, setIsGifLoading] = useState(false)
+
 
   // Ensure postId is a string
   const postId = id ? (Array.isArray(id) ? id[0] : id) : ""
 
   useEffect(() => {
     if (!postId) return
-    
+
     setLoading(true)
-    
+
     // Fetch post details
     void getPostById(postId)
       .then((data) => {
@@ -40,7 +45,7 @@ export default function PostPage() {
       })
       .catch((e) => console.error("Error fetching post:", e))
       .finally(() => setLoading(false))
-    
+
     // Fetch post comments
     if (postId) {
       void fetchComments()
@@ -60,7 +65,7 @@ export default function PostPage() {
 
   const fetchComments = async () => {
     if (!postId) return
-    
+
     try {
       const data = await getPostComments(postId)
       setComments(data as unknown as Comment[])
@@ -69,39 +74,56 @@ export default function PostPage() {
     }
   }
 
+  const fetchGifs = async (search: string) => {
+    const API_KEY = process.env.NEXT_PUBLIC_GIPHY_API_KEY
+    setIsGifLoading(true)
+
+    try {
+      const response = await fetch(
+        `https://api.giphy.com/v1/gifs/search?api_key=${API_KEY}&q=${encodeURIComponent(search)}&limit=10`
+      )
+      const data = await response.json()
+      setGifResults(data.data)
+    } catch (error) {
+      console.error("Error fetching GIFs", error)
+    } finally {
+      setIsGifLoading(false)
+    }
+  }
+
   const handleReplySubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    
+
     if (!postId) {
       setError("Post ID is missing")
       return
     }
-    
+
     if (!replyContent.trim()) {
       setError("Please enter a comment")
       return
     }
-    
+
     if (!user) {
       // Redirect to signin if not authenticated
       router.push("/signin")
       return
     }
-    
+
     try {
       setIsSubmitting(true)
       setError(null)
-      
+
       await createReply({
         postId,
         content: replyContent,
         firebaseUid: user.uid,
       })
-      
+
       // Clear the form and refresh comments
       setReplyContent("")
       await fetchComments()
-      
+
       // Reset replying state
       setReplyingToComment(null)
     } catch (error) {
@@ -127,7 +149,7 @@ export default function PostPage() {
 
     try {
       setIsLikeLoading(true)
-      
+
       const newVotes = await likePost({
         postId,
         likeType,
@@ -166,7 +188,7 @@ export default function PostPage() {
     if (!date) {return null};
     const now = new Date()
     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
-    
+
     if (diffInHours < 1) return "just now"
     if (diffInHours === 1) return "1 hour ago"
     if (diffInHours < 24) return `${diffInHours} hours ago`
@@ -199,9 +221,9 @@ export default function PostPage() {
         <CardContent>
           <div className="flex gap-4">
             <div className="flex flex-col items-center gap-1">
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              <Button
+                variant="ghost"
+                size="icon"
                 className="h-8 w-8"
                 onClick={() => handleLike(true)}
                 disabled={isLikeLoading}
@@ -209,9 +231,9 @@ export default function PostPage() {
                 <ArrowBigUp className="h-6 w-6" color={likeStatus === true ? "#2563EB" : "#000000"} />
               </Button>
               <span className="text-lg font-medium">{post.votes}</span>
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              <Button
+                variant="ghost"
+                size="icon"
                 className="h-8 w-8"
                 onClick={() => handleLike(false)}
                 disabled={isLikeLoading}
@@ -243,7 +265,13 @@ export default function PostPage() {
                 className="min-h-[100px]"
                 disabled={isSubmitting}
               />
-              <div className="flex justify-end">
+
+              <div className="flex justify-between">
+                <Button
+                  type="button"
+                  onClick={() => setShowGifModal(true)}>
+                  Add GIF
+                </Button>
                 <Button type="submit" disabled={isSubmitting}>
                   {isSubmitting ? "Posting..." : "Post Comment"}
                   {!isSubmitting && <Send className="ml-2 h-4 w-4" />}
@@ -259,7 +287,7 @@ export default function PostPage() {
           <MessageSquare className="h-5 w-5" />
           <h2 className="text-xl font-semibold">{comments.length} Comment{comments.length === 1 ? '' : 's'}</h2>
         </div>
-        
+
         {comments.length === 0 ? (
           <p className="text-muted-foreground py-4">No comments yet</p>
         ) : (
@@ -271,7 +299,22 @@ export default function PostPage() {
                   <span>•</span>
                   <span>{getTimeAgo(comment.createdAt)}</span>
                 </div>
-                <p>{comment.content}</p>
+                <div>
+                  {comment.content.split(" ").map((word, i) => {
+                  if (word.startsWith("http") && (word.endsWith(".gif") || word.includes("giphy.com")))
+                  {
+                    return (
+                      <img
+                        key={i}
+                        src={word}
+                        alt="GIF"
+                        className="my-2 rounded max-w-xs"
+                      />
+                    )
+                  }
+                  return <span key={i}>{word}</span>
+                })}
+                </div>
                 <div className="flex items-center gap-3 mt-2">
                   <div className="flex items-center gap-1">
                     <Button variant="ghost" size="icon" className="h-6 w-6">
@@ -282,8 +325,8 @@ export default function PostPage() {
                       <ArrowBigDown className="h-4 w-4" />
                     </Button>
                   </div>
-                  <Button 
-                    variant="ghost" 
+                  <Button
+                    variant="ghost"
                     size="sm"
                     onClick={() => {
                       // Scroll to reply form and focus it
@@ -312,6 +355,45 @@ export default function PostPage() {
           ))
         )}
       </div>
-    </div>
-  )
-}
+      {showGifModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-6 rounded-lg max-w-lg w-full relative">
+            {/* Close Button */}
+            <button
+              className="absolute top-2 right-2 text-gray-500 hover:text-black"
+              onClick={() => setShowGifModal(false)}
+            >
+              ✕
+            </button>
+            <input
+              type="text"
+              placeholder="Search for a GIF"
+              value={gifSearchTerm}
+              onChange={(e) => setGifSearchTerm(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") fetchGifs(gifSearchTerm)
+              }}
+              className="w-full border border-gray-300 rounded px-3 py-2 mb-4"
+            />
+
+            <div className="grid grid-cols-3 gap-3 max-h-60 overflow-y-auto">
+              {gifResults.map((gif) => (
+                <img
+                  key={gif.id}
+                  src={gif.images.fixed_width_small.url}
+                  alt={gif.title}
+                  className="rounded cursor-pointer hover:opacity-80 transition"
+                  onClick={() => {
+                    setReplyContent(replyContent + ` ${gif.images.original.url}`)
+                    setShowGifModal(false)
+                  }}
+                />
+              ))}
+            </div>
+
+            {isGifLoading && <p>Loading...</p>}
+
+          </div>
+        </div>
+      )}</div>
+    )}
