@@ -10,6 +10,20 @@ import { getPostById, getPostComments, createReply, likePost, getUserPostLikeSta
 import type { Post, Comment } from "~/lib/types"
 import { useAuth } from "~/auth/AuthContext"
 import { Alert, AlertDescription } from "~/components/ui/alert"
+import Image from "next/image"
+
+interface GiphyResponse {
+  data: Gif[];
+}
+
+interface Gif {
+  id: string;
+  title: string;
+  images: {
+    fixed_width_small: { url: string };
+    original: { url: string };
+  };
+}
 
 export default function PostPage() {
   const { id } = useParams()
@@ -26,7 +40,7 @@ export default function PostPage() {
   const { user } = useAuth()
   const router = useRouter()
   const [gifSearchTerm, setGifSearchTerm] = useState("")
-  const [gifResults, setGifResults] = useState<any[]>([])
+  const [gifResults, setGifResults] = useState<Gif[]>([])
   const [isGifLoading, setIsGifLoading] = useState(false)
 
 
@@ -82,7 +96,7 @@ export default function PostPage() {
       const response = await fetch(
         `https://api.giphy.com/v1/gifs/search?api_key=${API_KEY}&q=${encodeURIComponent(search)}&limit=10`
       )
-      const data = await response.json()
+      const data = await response.json() as GiphyResponse
       setGifResults(data.data)
     } catch (error) {
       console.error("Error fetching GIFs", error)
@@ -300,20 +314,22 @@ export default function PostPage() {
                   <span>{getTimeAgo(comment.createdAt)}</span>
                 </div>
                 <div>
-                  {comment.content.split(" ").map((word, i) => {
-                  if (word.startsWith("http") && (word.endsWith(".gif") || word.includes("giphy.com")))
-                  {
-                    return (
-                      <img
-                        key={i}
-                        src={word}
-                        alt="GIF"
-                        className="my-2 rounded max-w-xs"
-                      />
-                    )
-                  }
-                  return <span key={i}>{word}</span>
-                })}
+                  {comment.content?.split(" ").map((word, i) => {
+                    if (word.startsWith("http") && (word.endsWith(".gif") || word.includes("giphy.com")))
+                    {
+                      return (
+                        <Image
+                          key={i}
+                          src={word}
+                          alt="GIF"
+                          width={200}
+                          height={200}
+                          className="my-2 rounded max-w-xs"
+                        />
+                      )
+                    }
+                    return <span key={i}>{word}</span>
+                  })}
                 </div>
                 <div className="flex items-center gap-3 mt-2">
                   <div className="flex items-center gap-1">
@@ -371,14 +387,14 @@ export default function PostPage() {
               value={gifSearchTerm}
               onChange={(e) => setGifSearchTerm(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") fetchGifs(gifSearchTerm)
+                if (e.key === "Enter") void fetchGifs(gifSearchTerm)
               }}
               className="w-full border border-gray-300 rounded px-3 py-2 mb-4"
             />
 
             <div className="grid grid-cols-3 gap-3 max-h-60 overflow-y-auto">
               {gifResults.map((gif) => (
-                <img
+                <Image
                   key={gif.id}
                   src={gif.images.fixed_width_small.url}
                   alt={gif.title}
