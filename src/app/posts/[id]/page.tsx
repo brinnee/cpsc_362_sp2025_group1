@@ -324,6 +324,7 @@ export default function PostPage() {
                           alt="GIF"
                           width={200}
                           height={200}
+                          unoptimized
                           className="my-2 rounded max-w-xs"
                         />
                       )
@@ -399,6 +400,9 @@ export default function PostPage() {
                   src={gif.images.fixed_width_small.url}
                   alt={gif.title}
                   className="rounded cursor-pointer hover:opacity-80 transition"
+                  width={200}
+                  height={200}
+                  unoptimized
                   onClick={() => {
                     setReplyContent(replyContent + ` ${gif.images.original.url}`)
                     setShowGifModal(false)
