@@ -315,8 +315,7 @@ export default function PostPage() {
                 </div>
                 <div>
                   {comment.content?.split(" ").map((word, i) => {
-                    if (word.startsWith("http") && (word.endsWith(".gif") || word.includes("giphy.com")))
-                    {
+                    if (word.startsWith("http") && (word.endsWith(".gif") || word.includes("giphy.com"))) {
                       return (
                         <Image
                           key={i}
@@ -329,8 +328,9 @@ export default function PostPage() {
                         />
                       )
                     }
-                    return <span key={i}>{word}</span>
+                    return <span key={i}>{word} </span>
                   })}
+
                 </div>
                 <div className="flex items-center gap-3 mt-2">
                   <div className="flex items-center gap-1">
