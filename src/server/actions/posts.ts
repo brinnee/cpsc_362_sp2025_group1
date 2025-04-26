@@ -2,7 +2,7 @@
 
 import { db } from "~/server/db";
 import { desc, sql, eq, and } from "drizzle-orm";
-import { languages, posts, users, likes, replies } from "~/server/db/schema";
+import { languages, posts, users, likes, replies, userLanguages } from "~/server/db/schema";
 
 export async function getLanguages() {
   return await db
@@ -81,8 +81,9 @@ export async function getPosts(languageFilter?: string) {
   const query = db
     .select({
       id: posts.id,
-      title: posts.title,
-      language: languages.name,
+      title: sql<string>`COALESCE(${posts.title}, '')`,
+      content: sql<string>`COALESCE(${posts.content}, '')`,
+      language: sql<string>`COALESCE(${languages.name}, '')`,
       votes: sql<number>`(
         SELECT COUNT(*) 
         FROM ${likes} 
@@ -97,8 +98,8 @@ export async function getPosts(languageFilter?: string) {
         FROM ${replies} 
         WHERE post_id = ${posts.id}
       )`,
-      author: users.username,
-      createdAt: posts.createdAt,
+      author: sql<string>`COALESCE(${users.username}, '')`,
+      createdAt: sql<Date>`COALESCE(${posts.createdAt}::timestamp, NOW())`,
     })
     .from(posts)
     .innerJoin(languages, sql`${languages.id} = ${posts.languageId}`)
@@ -109,7 +110,11 @@ export async function getPosts(languageFilter?: string) {
     query.where(sql`LOWER(${languages.name}) = LOWER(${languageFilter})`);
   }
 
-  return await query;
+  const results = await query;
+  return results.map(post => ({
+    ...post,
+    createdAt: new Date(post.createdAt)
+  }));
 }
 
 export async function createPost(params: {
@@ -368,4 +373,166 @@ export async function searchPostsByTitle(query: string) {
     .limit(5);
   
   return result;
+}
+
+export async function followLanguage(params: {
+  language: string;
+  firebaseUid?: string;
+}) {
+  try {
+    if (!params.language) {
+      throw new Error("Missing language");
+    }
+
+    if (!params.firebaseUid) {
+      throw new Error("You must be logged in to follow a language");
+    }
+
+    // Get the user from the database using the Firebase UID
+    const dbUser = await db
+      .select()
+      .from(users)
+      .where(eq(users.firebaseUid, params.firebaseUid))
+      .limit(1);
+
+    if (dbUser.length === 0) {
+      throw new Error("User not found");
+    }
+
+    // Get the language ID
+    const language = await db
+      .select()
+      .from(languages)
+      .where(eq(languages.name, params.language))
+      .limit(1);
+
+    if (language.length === 0) {
+      throw new Error("Invalid language");
+    }
+
+    // Check if already following
+    const existingFollow = await db
+      .select()
+      .from(userLanguages)
+      .where(
+        and(
+          eq(userLanguages.userId, dbUser[0]!.id),
+          eq(userLanguages.languageId, language[0]!.id)
+        )
+      )
+      .limit(1);
+
+    if (existingFollow.length > 0) {
+      return; // Already following
+    }
+
+    // Add the follow relationship
+    await db.insert(userLanguages).values({
+      userId: dbUser[0]!.id,
+      languageId: language[0]!.id,
+    });
+  } catch (error) {
+    console.error("Error following language:", error);
+    throw error;
+  }
+}
+
+export async function unfollowLanguage(params: {
+  language: string;
+  firebaseUid?: string;
+}) {
+  try {
+    if (!params.language) {
+      throw new Error("Missing language");
+    }
+
+    if (!params.firebaseUid) {
+      throw new Error("You must be logged in to unfollow a language");
+    }
+
+    // Get the user from the database using the Firebase UID
+    const dbUser = await db
+      .select()
+      .from(users)
+      .where(eq(users.firebaseUid, params.firebaseUid))
+      .limit(1);
+
+    if (dbUser.length === 0) {
+      throw new Error("User not found");
+    }
+
+    // Get the language ID
+    const language = await db
+      .select()
+      .from(languages)
+      .where(eq(languages.name, params.language))
+      .limit(1);
+
+    if (language.length === 0) {
+      throw new Error("Invalid language");
+    }
+
+    // Remove the follow relationship
+    await db
+      .delete(userLanguages)
+      .where(
+        and(
+          eq(userLanguages.userId, dbUser[0]!.id),
+          eq(userLanguages.languageId, language[0]!.id)
+        )
+      );
+  } catch (error) {
+    console.error("Error unfollowing language:", error);
+    throw error;
+  }
+}
+
+export async function isFollowingLanguage(params: {
+  language: string;
+  firebaseUid?: string;
+}) {
+  try {
+    if (!params.language || !params.firebaseUid) {
+      return false;
+    }
+
+    // Get the user from the database using the Firebase UID
+    const dbUser = await db
+      .select()
+      .from(users)
+      .where(eq(users.firebaseUid, params.firebaseUid))
+      .limit(1);
+
+    if (dbUser.length === 0) {
+      return false;
+    }
+
+    // Get the language ID
+    const language = await db
+      .select()
+      .from(languages)
+      .where(eq(languages.name, params.language))
+      .limit(1);
+
+    if (language.length === 0) {
+      return false;
+    }
+
+    // Check if following
+    const existingFollow = await db
+      .select()
+      .from(userLanguages)
+      .where(
+        and(
+          eq(userLanguages.userId, dbUser[0]!.id),
+          eq(userLanguages.languageId, language[0]!.id)
+        )
+      )
+      .limit(1);
+
+    return existingFollow.length > 0;
+  } catch (error) {
+    console.error("Error checking language follow status:", error);
+    return false;
+  }
 }
