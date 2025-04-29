@@ -55,26 +55,11 @@ export default function Chatbot() {
               className="flex-1 p-2 border rounded"
               onKeyDown={(e) => e.key === "Enter" && sendMessage()}
             />
-             <button
+            <button
               onClick={sendMessage}
-              className="group p-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-all"
-              aria-label="Send message"
+              className="px-2 bg-blue-600 text-white rounded hover:bg-blue-700"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="transition-transform group-hover:translate-x-0.5"
-              >
-                <line x1="22" y1="2" x2="11" y2="13"></line>
-                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-              </svg>
+              Send
             </button>
           </div>
         </div>
