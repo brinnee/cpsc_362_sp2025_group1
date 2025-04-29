@@ -14,9 +14,9 @@
     --primary-foreground: 205 99% 30%; /* Dark blue */
     --secondary: 205 99% 20%; /* Darker blue */
     --secondary-foreground: 0 0% 98%;
-    --muted: 205 30% 40%; /* Desaturated blue */
+    --muted: 205 20% 30%; /* Desaturated blue */
     --muted-foreground: 0 0% 80%;
-    --accent: 205 99% 40%; /* Brighter blue */
+    --accent: 205 99% 20%; /* Brighter blue */
     --accent-foreground: 0 0% 98%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
