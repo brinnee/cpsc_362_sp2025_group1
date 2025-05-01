@@ -1,6 +1,10 @@
 "use client"; // Required for interactivity
 import { useState } from "react";
 
+interface ChatResponse {
+  reply: string;
+}
+
 export default function Chatbot() {
   const [messages, setMessages] = useState<Array<{ sender: string; text: string }>>([]);
   const [input, setInput] = useState("");
@@ -17,9 +21,16 @@ export default function Chatbot() {
     const response = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: input }),
+      // body: JSON.stringify({ message: input }),
+      body: JSON.stringify({
+        message: input,
+        history: messages.map(msg => ({
+          role: msg.sender === "You" ? "user" : "assistant",
+          content: msg.text
+        }))
+      }),
     });
-    const data = await response.json();
+    const data = await response.json() as ChatResponse;
     setMessages((msgs) => [...msgs, { sender: "Bot", text: data.reply }]);
   };
 
@@ -28,7 +39,7 @@ export default function Chatbot() {
       {/* Toggle button (fixed at bottom-right corner) */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-4 right-4 bg-blue-500 text-white p-3 rounded-full shadow-lg hover:bg-blue-800"
+        className="fixed bottom-4 right-4 bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700"
       >
         {isOpen ? "×" : "💬"}
       </button>
@@ -36,7 +47,7 @@ export default function Chatbot() {
       {/* Chat UI (shown only when isOpen=true) */}
       {isOpen && (
         <div className="fixed bottom-20 right-4 w-80 bg-white border border-gray-200 rounded-lg shadow-lg flex flex-col">
-          <div className="p-4 bg-blue-500 text-white rounded-t-lg">
+          <div className="p-4 bg-blue-600 text-white rounded-t-lg">
             <h2 className="font-bold">AI Assistant</h2>
           </div>
           <div className="p-4 h-60 overflow-y-auto">
@@ -55,26 +66,11 @@ export default function Chatbot() {
               className="flex-1 p-2 border rounded"
               onKeyDown={(e) => e.key === "Enter" && sendMessage()}
             />
-             <button
+            <button
               onClick={sendMessage}
-              className="group p-2 bg-blue-500 text-white rounded hover:bg-blue-800 transition-all"
-              aria-label="Send message"
+              className="px-3 bg-blue-600 text-white rounded hover:bg-blue-700"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="transition-transform group-hover:translate-x-0.5"
-              >
-                <line x1="22" y1="2" x2="11" y2="13"></line>
-                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-              </svg>
+              Send
             </button>
           </div>
         </div>
