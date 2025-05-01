@@ -10,10 +10,15 @@ import { getLanguages, getPosts } from "~/server/actions/posts"
 import type { Language, Post } from "~/lib/types"
 import { useAuth } from "~/auth/AuthContext"
 
-export default function LanguageFeed() {
-  const [selectedLanguage, setSelectedLanguage] = useState("all")
+interface LanguageFeedProps {
+  initialPosts?: Post[];
+  initialLanguage?: string;
+}
+
+export default function LanguageFeed({ initialPosts = [], initialLanguage = "all" }: LanguageFeedProps) {
+  const [selectedLanguage, setSelectedLanguage] = useState(initialLanguage)
   const [languages, setLanguages] = useState<Language[]>([])
-  const [posts, setPosts] = useState<Post[]>([])
+  const [posts, setPosts] = useState<Post[]>(initialPosts)
   const { user } = useAuth()
 
   useEffect(() => {
@@ -26,7 +31,6 @@ export default function LanguageFeed() {
 
   useEffect(() => {
     // Fetch posts when language selection changes
-    // @ts-expect-error null is fine
     getPosts(selectedLanguage === "all" ? undefined : selectedLanguage).then(setPosts).catch((e) => console.log(e))
   }, [selectedLanguage])
 
