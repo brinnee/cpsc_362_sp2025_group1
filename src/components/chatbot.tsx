@@ -1,26 +1,48 @@
 "use client"; // Required for interactivity
 import { useState } from "react";
+ // import { Send } from 'lucide-react';
 
 export default function Chatbot() {
   const [messages, setMessages] = useState<Array<{ sender: string; text: string }>>([]);
   const [input, setInput] = useState("");
   const [isOpen, setIsOpen] = useState(false); // Toggle visibility
+  const [error, setError] = useState<string | null>(null); // Also added to ui
+
+  // Attempting to fix linter failure
+  // Defining expected response type
+  interface chatResponses {
+    reply: string;
+  }
 
   const sendMessage = async () => {
     if (!input) return;
 
+    
     // Add user message
     setMessages([...messages, { sender: "You", text: input }]);
+    setError(null);
     setInput("");
 
-    // Call backend API (Step 2)
-    const response = await fetch("/api/chat", {
+    try {
+      const response = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: input }),
-    });
-    const data = await response.json();
-    setMessages((msgs) => [...msgs, { sender: "Bot", text: data.reply }]);
+          body: JSON.stringify({
+            message: input,
+            history: messages.map(msg => ({
+              role: msg.sender === "You" ? "user" : "assistant",
+              content: msg.text,
+            })),
+          }),
+      });
+      if (!response.ok) throw new Error("Request has failed");
+
+      const data=  await response.json() as chatResponses;
+      setMessages(prev => [...prev, { sender: "Bot", text: data.reply }]);
+    } catch (err) {
+      console.error("Chat API error:", err);
+      setError("Failed to fetch chatbot response(s).");
+    }
   };
 
   return (
@@ -55,7 +77,7 @@ export default function Chatbot() {
               className="flex-1 p-2 border rounded"
               onKeyDown={(e) => e.key === "Enter" && sendMessage()}
             />
-             <button
+            <button
               onClick={sendMessage}
               className="group p-2 bg-blue-500 text-white rounded hover:bg-blue-800 transition-all"
               aria-label="Send message"
@@ -77,6 +99,11 @@ export default function Chatbot() {
               </svg>
             </button>
           </div>
+          {error && (
+            <div className="px-4 pb-4 text-sm text-red-500">
+              {error}
+            </div>
+          )}
         </div>
       )}
     </>
