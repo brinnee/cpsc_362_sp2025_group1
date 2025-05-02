@@ -1,8 +1,8 @@
 "use server";
 
 import { db } from "~/server/db";
-import { users, posts, userLanguages, likes } from "~/server/db/schema";
-import { eq, and } from "drizzle-orm";
+import { users, posts, userLanguages, likes, languages } from "~/server/db/schema";
+import { eq, and, sql, inArray } from "drizzle-orm";
 import type { Post, Language } from "~/lib/types";
 import { getLanguagesByIds } from "./languages";
 
@@ -119,17 +119,10 @@ export async function getUserLikedPosts(firebaseUid: string): Promise<Post[]> {
   try {
     // Get user from database
     const dbUser = await db.select().from(users).where(eq(users.firebaseUid, firebaseUid));
-    
-    if (!dbUser || dbUser.length === 0) {
-      throw new Error("User not found");
-    }
-    
+    if (!dbUser || dbUser.length === 0) throw new Error("User not found");
     const userId = dbUser[0]?.id;
-    
-    if (!userId) {
-      throw new Error("Invalid user ID");
-    }
-    
+    if (!userId) throw new Error("Invalid user ID");
+
     // Get posts liked by the user
     const likedPostsQuery = await db
       .select({
@@ -138,28 +131,48 @@ export async function getUserLikedPosts(firebaseUid: string): Promise<Post[]> {
       .from(likes)
       .where(and(
         eq(likes.userId, userId),
-        eq(likes.likeType, true) // true for upvote
+        eq(likes.likeType, true)
       ));
-    
-    if (likedPostsQuery.length === 0) {
-      return [];
-    }
-    
-    // Get the actual post data
+
+    if (likedPostsQuery.length === 0) return [];
+
     const likedPostIds = likedPostsQuery.map(vote => vote.postId).filter(Boolean) as number[];
-    
-    const mockPosts: Post[] = likedPostIds.map((id, index) => ({
-      id,
-      title: `Sample Post ${index + 1}`,
-      content: "This is a sample post content...",
-      language: "JavaScript",
-      author: "John Doe",
-      votes: Math.floor(Math.random() * 100),
-      comments: Math.floor(Math.random() * 20),
-      createdAt: new Date(Date.now() - Math.floor(Math.random() * 10) * 24 * 60 * 60 * 1000),
+
+    // Get the actual post data
+    const postsResult = await db
+      .select({
+        id: posts.id,
+        title: posts.title,
+        content: posts.content,
+        language: languages.name,
+        author: users.username,
+        votes: sql<number>`(
+          SELECT COUNT(*) FROM ${likes}
+          WHERE post_id = ${posts.id} AND like_type = true
+        ) - (
+          SELECT COUNT(*) FROM ${likes}
+          WHERE post_id = ${posts.id} AND like_type = false
+        )`,
+        comments: sql<number>`(
+          SELECT COUNT(*) FROM ${likes}
+          WHERE post_id = ${posts.id}
+        )`,
+        createdAt: posts.createdAt,
+      })
+      .from(posts)
+      .innerJoin(languages, eq(posts.languageId, languages.id))
+      .innerJoin(users, eq(posts.userId, users.id))
+      .where(inArray(posts.id, likedPostIds));
+
+    // Ensure createdAt is a Date object
+    return postsResult.map(post => ({
+      ...post,
+      title: post.title ?? "",
+      content: post.content ?? "",
+      language: post.language ?? "",
+      author: post.author ?? "",
+      createdAt: new Date(post.createdAt),
     }));
-    
-    return mockPosts;
   } catch (error) {
     console.error("Error fetching liked posts:", error);
     return [];
