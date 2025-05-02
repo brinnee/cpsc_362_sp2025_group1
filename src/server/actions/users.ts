@@ -171,7 +171,7 @@ export async function getUserLikedPosts(firebaseUid: string): Promise<Post[]> {
       content: post.content ?? "",
       language: post.language ?? "",
       author: post.author ?? "",
-      createdAt: new Date(post.createdAt),
+      createdAt: new Date(post.createdAt ?? Date.now()),
     }));
   } catch (error) {
     console.error("Error fetching liked posts:", error);
